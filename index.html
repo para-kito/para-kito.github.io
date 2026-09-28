@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070914">
+<title>Para Kito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root {
+    --bg: #070914;
+    --surface: rgba(255, 255, 255, .06);
+    --surface-2: rgba(255, 255, 255, .12);
+    --text: #f5f1e8;
+    --muted: #a3a8c0;
+    --faint: #6a7090;
+    --gold: #f6c96b;
+    --pink: #ff8fab;
+    --paper: #f7f0e3;
+    --ink: #2b2420;
+    --ink-soft: #7a6b60;
+    --radius: 14px;
+    --tint: #3b2d6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  svg { display: block; }
+
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  #tint {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: linear-gradient(180deg, var(--tint) 0%, transparent 75%);
+    opacity: 0; transition: opacity .8s, background .8s;
+  }
+  body.tinted #tint { opacity: .6; }
+
+  .screen {
+    display: none; position: relative; z-index: 1;
+    min-height: 100dvh; max-width: 520px; margin: 0 auto; padding: 0 16px;
+  }
+  .screen.active { display: flex; flex-direction: column; animation: enter .6s ease both; }
+  @keyframes enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes float { 50% { transform: translateY(-8px) rotate(-4deg); } }
+  @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+  .kicker { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .btn {
+    background: var(--gold); color: #1a1405; font-weight: 700;
+    padding: 14px 28px; border-radius: 999px; transition: transform .15s;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn-ghost { background: var(--surface-2); color: var(--text); }
+
+  /* ---------- Candado ---------- */
+  #lock { justify-content: center; align-items: center; text-align: center; gap: 14px; }
+  .envelope { font-size: 64px; animation: float 3s ease-in-out infinite; margin-bottom: 8px; }
+  .lock-title { font-family: Fraunces, serif; font-size: 36px; font-weight: 800; line-height: 1.1; }
+  .lock-sub { color: var(--muted); max-width: 290px; line-height: 1.55; }
+  #lock-form { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 12px; }
+  .code {
+    font: 700 32px 'DM Sans', sans-serif; letter-spacing: .5em; text-align: center;
+    width: 220px; padding: 12px 0 12px .5em;
+    background: var(--surface); border: 1px solid var(--surface-2); border-radius: var(--radius);
+    color: var(--text); outline: none;
+  }
+  .code:focus { border-color: var(--gold); }
+  .code::placeholder { color: var(--faint); }
+  .shake { animation: shake .4s; }
+  .msg { min-height: 24px; color: var(--muted); font-size: 14px; }
+  .msg.bad { color: var(--pink); }
+  .msg.good { color: var(--gold); font-weight: 700; font-size: 20px; }
+
+  /* ---------- Cuenta atrás ---------- */
+  #wait { justify-content: center; text-align: center; padding-top: 48px; padding-bottom: 48px; gap: 8px; }
+  .crow { font-size: 68px; line-height: 1; animation: float 3s ease-in-out infinite; align-self: center; }
+  .wait-title { font: 800 34px/1.1 Fraunces, serif; margin-top: 6px; }
+  .count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 20px 0 8px; }
+  .count div { background: var(--surface); border: 1px solid var(--surface-2); border-radius: var(--radius); padding: 14px 2px 10px; }
+  .count b { display: block; font: 800 34px/1 Fraunces, serif; font-variant-numeric: tabular-nums; }
+  .count span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  .when { color: var(--gold); font-weight: 500; }
+  .clues { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 10px; margin-top: 26px; }
+  .clue { background: var(--surface); border: 1px solid var(--surface-2); border-radius: var(--radius); padding: 14px 16px; line-height: 1.5; animation: rise .6s ease both; }
+  .c-head { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .clue.new { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 10px 30px rgba(246, 201, 107, .12); }
+  .clue.new .c-tag { color: var(--gold); font-weight: 700; }
+  .clue.locked { background: transparent; border-style: dashed; color: var(--faint); }
+
+  /* ---------- Portada + lista ---------- */
+  #home { padding-top: 36px; padding-bottom: 48px; }
+  .cover {
+    width: min(240px, 66vw); aspect-ratio: 1; margin: 0 auto; border-radius: 10px;
+    position: relative; overflow: hidden;
+    background: radial-gradient(circle at 72% 22%, #43327a 0, #181c3e 48%, #090b18 100%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+  }
+  .cover .moon {
+    position: absolute; top: 16%; right: 16%; width: 36px; height: 36px; border-radius: 50%;
+    box-shadow: -8px 5px 0 0 var(--gold);
+  }
+  .cover .dot { position: absolute; border-radius: 50%; background: #fff; }
+  .cover-title {
+    position: absolute; left: 18px; bottom: 34px;
+    font: 800 60px/1 Fraunces, serif; letter-spacing: -.02em;
+  }
+  .cover-sub {
+    position: absolute; left: 20px; bottom: 18px;
+    font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold);
+  }
+  .meta { margin-top: 26px; }
+  h1 { font: 800 50px/1.05 Fraunces, serif; margin: 6px 0 10px; letter-spacing: -.02em; }
+  .tagline { font-family: Lora, serif; font-style: italic; font-size: 17px; }
+  .byline { color: var(--muted); font-size: 14px; margin-top: 10px; }
+  .actions { display: flex; align-items: center; gap: 14px; margin: 22px 0 10px; }
+  .play-big {
+    width: 58px; height: 58px; border-radius: 50%; background: var(--gold); color: #1a1405;
+    display: grid; place-items: center; box-shadow: 0 8px 24px rgba(246, 201, 107, .3);
+    transition: transform .15s;
+  }
+  .play-big:active { transform: scale(.94); }
+
+  .tracks { list-style: none; }
+  .track {
+    display: grid; grid-template-columns: 22px 48px 1fr; align-items: center; gap: 12px;
+    padding: 9px 8px; margin: 0 -8px; border-radius: 10px; cursor: pointer; transition: background .2s;
+  }
+  .track:hover { background: var(--surface); }
+  .num { color: var(--muted); text-align: center; font-size: 14px; }
+  .track.done .num { color: var(--gold); }
+  .thumb {
+    width: 48px; height: 48px; border-radius: 6px; flex: none;
+    display: grid; place-items: center; font-size: 22px;
+    background-size: cover; background-position: center;
+  }
+  .t-body { min-width: 0; }
+  .t-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t-sub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .track.secret .t-title { color: var(--gold); }
+  .track.locked { opacity: .5; }
+  .foot { margin-top: 36px; text-align: center; color: var(--faint); font-size: 13px; }
+  .violin { font-size: 26px; padding: 8px; transition: transform .2s; }
+  .violin:active { transform: rotate(-15deg) scale(1.1); }
+
+  /* ---------- Reproductor ---------- */
+  #player { height: 100dvh; padding-top: 10px; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .p-top { display: flex; align-items: center; justify-content: space-between; height: 44px; flex: none; }
+  .icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; }
+  .icon-btn:active { background: var(--surface); }
+  .p-from { text-align: center; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .p-from b { display: block; color: var(--text); letter-spacing: 0; text-transform: none; font-size: 13px; margin-top: 2px; }
+  .p-head { display: flex; gap: 12px; align-items: center; margin: 12px 0 4px; flex: none; }
+  .p-title { font: 800 23px/1.15 Fraunces, serif; }
+  .p-song { color: var(--muted); font-size: 14px; margin-top: 3px; }
+
+  .stage {
+    flex: 1; overflow-y: auto; padding: 22px 2px 48px; cursor: pointer;
+    -webkit-mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 44px), transparent);
+            mask-image: linear-gradient(transparent, #000 22px, #000 calc(100% - 44px), transparent);
+    scrollbar-width: none;
+  }
+  .stage::-webkit-scrollbar { display: none; }
+  .line {
+    font-size: clamp(24px, 6.6vw, 31px); font-weight: 700; line-height: 1.25; letter-spacing: -.01em;
+    margin-bottom: 16px; color: rgba(255, 255, 255, .4);
+    transition: color .6s; animation: rise .6s ease both;
+  }
+  .line.now { color: #fff; }
+
+  .paper {
+    background: var(--paper); color: var(--ink); border-radius: 6px;
+    padding: 28px 22px 26px; font-family: Lora, serif; font-size: 17px; line-height: 1.75;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+  }
+  .paper .from { font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); text-align: center; font-family: 'DM Sans', sans-serif; }
+  .paper h3 { font: 800 25px/1.2 Fraunces, serif; text-align: center; margin: 6px 0 4px; }
+  .paper .ornament { text-align: center; color: #9b4a4a; margin: 10px 0 16px; letter-spacing: .5em; }
+  .paper p { margin-bottom: 14px; text-indent: 1.2em; animation: rise .9s ease both; }
+  .paper p.first { text-indent: 0; }
+  .paper p.first::first-letter {
+    float: left; font: 800 3.3em/.8 Fraunces, serif; padding: 7px 8px 0 0; color: #9b4a4a;
+  }
+  .paper p.dialog { font-style: italic; }
+  .paper .end { text-align: center; color: var(--ink-soft); font-size: 13px; letter-spacing: .2em; text-indent: 0; margin: 18px 0 0; }
+  .review {
+    margin-top: 16px; background: var(--surface); border: 1px solid var(--surface-2);
+    border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--muted); line-height: 1.5;
+    animation: rise .8s ease both;
+  }
+  .review .stars { color: var(--gold); letter-spacing: 3px; display: block; margin-bottom: 4px; }
+  .review q { color: var(--text); font-family: Lora, serif; font-style: italic; }
+
+  .outro { margin-top: 26px; display: flex; flex-direction: column; align-items: center; gap: 22px; animation: rise .9s ease both; cursor: default; }
+  .polaroid {
+    background: #fbf8f2; padding: 12px 12px 14px; border-radius: 4px;
+    transform: rotate(-2.5deg); box-shadow: 0 18px 40px rgba(0, 0, 0, .55); width: min(290px, 80%);
+  }
+  .polaroid img, .polaroid .ph { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border-radius: 2px; }
+  .polaroid .ph {
+    display: grid; place-items: center; text-align: center; padding: 14px;
+    background: linear-gradient(135deg, #ddd5c7, #b9b0a2); color: #5b544b; font-size: 13px;
+  }
+  .polaroid figcaption { font: 600 23px/1.2 Caveat, cursive; color: var(--ink); text-align: center; margin-top: 10px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+  .stat { background: var(--surface); border: 1px solid var(--surface-2); border-radius: var(--radius); padding: 14px; }
+  .stat b { display: block; font: 800 30px/1.1 Fraunces, serif; color: var(--gold); }
+  .stat span { font-size: 13px; color: var(--muted); }
+  .live { font-size: 14px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+  .unlock { text-align: center; color: var(--gold); font-weight: 700; }
+  .row-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+  .p-bottom { flex: none; padding-top: 6px; }
+  .bar { height: 4px; background: rgba(255, 255, 255, .18); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: #fff; transition: width .6s ease; }
+  .bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .controls { display: flex; justify-content: center; align-items: center; gap: 30px; margin-top: 4px; }
+  .pp { width: 62px; height: 62px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; transition: transform .15s; }
+  .pp:active { transform: scale(.94); }
+  .hint { text-align: center; font-size: 12px; color: var(--faint); margin-top: 8px; }
+  .embed iframe { width: 100%; height: 80px; border: 0; border-radius: 12px; margin-top: 10px; }
+
+  /* ---------- Tarta ---------- */
+  #cake { align-items: center; text-align: center; padding-top: 28px; padding-bottom: 60px; gap: 8px; }
+  #cake .p-top { align-self: stretch; }
+  .cake-title { font: 800 40px/1.1 Fraunces, serif; margin-top: 4px; }
+  .cake-note { color: var(--muted); max-width: 300px; line-height: 1.55; margin-top: 6px; }
+  .cake-wrap { position: relative; width: 250px; height: 200px; margin: 54px 0 8px; }
+  .candles { position: absolute; top: 0; left: 50%; transform: translateX(-50%); display: flex; gap: 18px; z-index: 2; }
+  .candle {
+    width: 12px; height: 54px; border-radius: 3px; position: relative; cursor: pointer;
+    background: repeating-linear-gradient(-45deg, #fff 0 6px, var(--pink) 6px 12px);
+  }
+  .flame {
+    position: absolute; left: 50%; top: -28px; width: 15px; height: 24px; margin-left: -7.5px;
+    border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+    background: radial-gradient(circle at 50% 72%, #fffbe0 0, #ffd166 38%, #ff8a3d 72%, rgba(255,138,61,0) 80%);
+    box-shadow: 0 0 22px 8px rgba(255, 190, 90, .4);
+    transform-origin: 50% 100%; animation: flicker .14s infinite alternate;
+    transition: opacity .3s, transform .3s;
+  }
+  @keyframes flicker { from { transform: scaleY(1) rotate(-2deg); } to { transform: scaleY(1.1) rotate(2deg); } }
+  .candle.out .flame { animation: none; opacity: 0; transform: scale(.2) translateY(-10px); }
+  .smoke {
+    position: absolute; left: 50%; top: -20px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
+    background: rgba(220, 220, 230, .5); animation: smoke 1.4s ease-out forwards; pointer-events: none;
+  }
+  @keyframes smoke { to { transform: translate(6px, -50px) scale(3); opacity: 0; } }
+  .tier { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 10px; }
+  .tier::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: #fff; border-radius: 10px 10px 0 0; }
+  .tier::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 11px; height: 12px;
+    background: radial-gradient(circle at 50% 0, #fff 7px, transparent 8px) 0 0 / 16px 12px repeat-x;
+  }
+  .tier.top { top: 54px; width: 170px; height: 58px; background: #f4c6d4; }
+  .tier.bottom { top: 112px; width: 230px; height: 72px; background: #8b5a3c; }
+  .plate { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 270px; height: 16px; border-radius: 50%; background: rgba(255, 255, 255, .16); }
+  .cake-status { min-height: 26px; font-weight: 500; }
+  .carta {
+    display: none; width: 100%; margin-top: 22px; text-align: left;
+    background: var(--paper); color: var(--ink); border-radius: 8px; padding: 28px 22px;
+    font-family: Lora, serif; font-size: 17px; line-height: 1.7; box-shadow: 0 20px 50px rgba(0, 0, 0, .5);
+  }
+  .carta.show { display: block; animation: rise 1.1s ease both; }
+  .carta h2 { font: 800 28px/1.15 Fraunces, serif; text-align: center; margin-bottom: 16px; }
+  .carta p { margin-bottom: 12px; }
+  .carta blockquote { font-style: italic; text-align: center; color: #9b4a4a; margin: 20px 0 6px; font-size: 18px; }
+  .firma { font: 600 32px/1 Caveat, cursive; text-align: right; margin-top: 14px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); z-index: 10;
+    background: #1c2140; border: 1px solid var(--surface-2); color: var(--text);
+    padding: 12px 18px; border-radius: 999px; font-size: 14px; max-width: calc(100% - 32px); text-align: center;
+    opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div id="tint"></div>
+
+<main>
+  <!-- Cuenta atrás con pistas -->
+  <section id="wait" class="screen">
+    <button class="crow" id="crow" aria-label="Cuervo mensajero">🐦‍⬛</button>
+    <p class="kicker" id="wait-kicker">Para Kito</p>
+    <h2 class="wait-title">¡CAW! Misión en curso</h2>
+    <p class="lock-sub" style="align-self:center">Tu cuervo mensajero trae una pista nueva cada día. El regalo se abre en…</p>
+    <div class="count" id="count">
+      <div><b data-u="d">0</b><span>días</span></div>
+      <div><b data-u="h">00</b><span>horas</span></div>
+      <div><b data-u="m">00</b><span>min</span></div>
+      <div><b data-u="s">00</b><span>seg</span></div>
+    </div>
+    <p class="when" id="when"></p>
+    <ol class="clues" id="clues"></ol>
+  </section>
+
+  <!-- Candado -->
+  <section id="lock" class="screen">
+    <div class="envelope">💌</div>
+    <p class="kicker" id="lock-kicker">Para Kito</p>
+    <h2 class="lock-title">Tienes un mensaje</h2>
+    <p class="lock-sub">Llega un poquito tarde, pero ha llegado. Para abrirlo, introduce el código.</p>
+    <form id="lock-form" autocomplete="off">
+      <input id="code" class="code" inputmode="numeric" maxlength="4" placeholder="····" aria-label="Código">
+      <button class="btn" type="submit">Abrir</button>
+    </form>
+    <p class="msg" id="lock-msg">Pista: ya sabes qué día fue 😉</p>
+  </section>
+
+  <!-- Lista -->
+  <section id="home" class="screen">
+    <div class="cover" id="cover">
+      <div class="moon"></div>
+      <div class="cover-title">Kito</div>
+      <div class="cover-sub">vol. 1 · 3 meses</div>
+    </div>
+    <div class="meta">
+      <p class="kicker">Lista privada · Edición especial</p>
+      <h1>Kito</h1>
+      <p class="tagline">«Cuando menos lo esperas, es cuando aparece.»</p>
+      <p class="byline" id="byline"></p>
+    </div>
+    <div class="actions">
+      <button class="play-big" id="play-all" aria-label="Reproducir">
+        <svg width="26" height="26" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+      </button>
+      <span class="kicker" id="progress-label"></span>
+    </div>
+    <ol class="tracks" id="tracks"></ol>
+    <div class="foot">
+      <button class="violin" id="violin" aria-label="Violín">🎻</button>
+      <p>Hecho a mano por <span id="foot-de"></span>, línea a línea.</p>
+    </div>
+  </section>
+
+  <!-- Reproductor -->
+  <section id="player" class="screen">
+    <header class="p-top">
+      <button class="icon-btn" id="back" aria-label="Volver">
+        <svg width="26" height="26" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="p-from" id="p-num">Reproduciendo desde<b>Kito</b></div>
+      <span class="icon-btn"></span>
+    </header>
+    <div class="p-head">
+      <div class="thumb" id="p-thumb"></div>
+      <div class="t-body">
+        <div class="p-title" id="p-title"></div>
+        <div class="p-song" id="p-song"></div>
+      </div>
+    </div>
+    <div class="stage" id="stage"></div>
+    <div class="p-bottom">
+      <div class="bar"><i id="bar"></i></div>
+      <div class="bar-labels"><span id="bar-l"></span><span id="bar-r"></span></div>
+      <div class="controls">
+        <button class="icon-btn" id="prev" aria-label="Anterior">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12L18 6v12z" fill="currentColor"/></svg>
+        </button>
+        <button class="pp" id="pp" aria-label="Reproducir o pausar"></button>
+        <button class="icon-btn" id="next" aria-label="Siguiente">
+          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18V6l8.5 6z" fill="currentColor"/></svg>
+        </button>
+      </div>
+      <p class="hint" id="hint">Toca la pantalla para avanzar más rápido</p>
+      <div class="embed" id="p-embed"></div>
+    </div>
+  </section>
+
+  <!-- Pista oculta: la tarta -->
+  <section id="cake" class="screen">
+    <header class="p-top">
+      <button class="icon-btn" id="cake-back" aria-label="Volver">
+        <svg width="26" height="26" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="p-from">Pista oculta<b>✨</b></div>
+      <span class="icon-btn"></span>
+    </header>
+    <h2 class="cake-title" id="cake-title"></h2>
+    <p class="kicker" id="cake-artist"></p>
+    <p class="cake-note">Llego un poquito tarde… pero esta tarta la he programado yo.</p>
+    <div class="cake-wrap">
+      <div class="candles" id="candles"></div>
+      <div class="tier top"></div>
+      <div class="tier bottom"></div>
+      <div class="plate"></div>
+    </div>
+    <p class="cake-status" id="cake-status">Pide un deseo y sopla las velas</p>
+    <div class="row-btns" id="cake-actions">
+      <button class="btn" id="mic">🎤 Soplar con el micro</button>
+    </div>
+    <p class="hint">o tócalas una a una</p>
+    <article class="carta" id="carta"></article>
+    <div class="embed" id="cake-embed" style="width:100%"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* =====================================================================
+   TODO EL CONTENIDO ESTÁ AQUÍ. Cambia textos, fotos y canciones sin
+   tocar el resto del código.
+   - foto: ruta a una imagen dentro de la carpeta /fotos
+   - spotify: el ID de la canción (lo que va después de /track/ en el
+     enlace de compartir de Spotify). Si lo dejas vacío, no sale player.
+   ===================================================================== */
+const HISTORIA = {
+  para: 'Kito',
+  nombre: 'Alejandro',
+  de: 'David',
+  inicio: '2026-07-01T00:00:00',   // el día que me escribió
+  codigo: '0107',
+  velas: 5,
+  cancionesEnKito: 22,
+
+  // Hasta esta hora se ve la cuenta atrás. Para probar el regalo antes: añade ?preview a la URL
+  entrega: '2026-10-02T22:00:00',
+  pistas: [
+    { desde: '2026-09-28T00:00:00', texto: '¡CAW! Tienes un regalo en camino. Tiene banda sonora… y tú ya te sabes casi todas las canciones. 🎵' },
+    { desde: '2026-09-29T00:00:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
+    { desde: '2026-09-30T00:00:00', texto: '¡CAW! Salen un mojito, un mirador y un faro. Rojo, para más señas.' },
+    { desde: '2026-10-01T00:00:00', texto: '¡CAW! Hoy hacéis 3 meses 💛 Para abrir tu regalo vas a necesitar una fecha. Piensa cuál.' },
+    { desde: '2026-10-02T09:00:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto y pulmones preparados. 🌬️' },
+  ],
+
+  capitulos: [
+    {
+      titulo: 'Cuando menos lo esperas',
+      cuando: 'La fiesta',
+      emoji: '🎉',
+      color: '#5b3b8c',
+      cancion: { titulo: 'A Dónde Vamos', artista: 'Morat', spotify: '' },
+      foto: 'fotos/01.jpg',
+      pie: 'Quién nos lo iba a decir…',
+      lineas: [
+        'Todo empezó en el 18 cumpleaños de tu prima.',
+        'Yo iba con mi grupo.',
+        'Tú, con el tuyo.',
+        'Os vi y pensé: «qué raritos». 😅',
+        '(Perdón. Pero es la verdad.)',
+        'Al principio ni me fijé en ti.',
+        'Pero según avanzaba la noche…',
+        'mis ojos volvían a ti una y otra vez.',
+        'Tenías algo diferente.',
+        'No sabía qué era, pero me llamabas muchísimo la atención.',
+      ],
+    },
+    {
+      titulo: 'La corazonada',
+      cuando: 'Días después',
+      emoji: '🔮',
+      color: '#2f4f8a',
+      cancion: { titulo: 'Cuando Nadie Ve', artista: 'Morat', spotify: '' },
+      foto: 'fotos/02.jpg',
+      pie: 'Mi corazonada (spoiler: acerté)',
+      lineas: [
+        'Esa noche coincidimos un momento y hablamos.',
+        'Descubrimos que en La Manga vivíamos cerquita.',
+        '«A ver si algún día nos vemos.»',
+        'Y ya. Nada más.',
+        'Pasaron los días.',
+        'No pasaba nada.',
+        'Pero yo tenía una corazonada…',
+        '…de que me ibas a escribir.',
+      ],
+    },
+    {
+      titulo: '1 de julio',
+      cuando: '1 jul 2026',
+      emoji: '🍹',
+      color: '#1f6f78',
+      cancion: null,
+      foto: 'fotos/03.jpg',
+      pie: 'Primer mojito. Nervios: los dos.',
+      lineas: [
+        'Y unas semanas después…',
+        'me escribiste. 📩',
+        'Me dijiste de quedar.',
+        'Yo te contesté: «obvio que sí».',
+        'Estaba solo en casa, así que te dije que vinieras.',
+        'Te llevé al puerto de Tomás Maestre a tomarnos un mojito.',
+        'Me confesaste que estabas nervioso.',
+        'Lo que tú no sabías…',
+        'es que yo también lo estaba.',
+      ],
+    },
+    {
+      titulo: 'Mirador de Monteblanco',
+      cuando: 'La noche que casi',
+      emoji: '🌙',
+      color: '#3a3f7a',
+      cancion: null,
+      foto: 'fotos/04.jpg',
+      pie: 'Aquí ya me tenías',
+      lineas: [
+        'Después vinieron muchas quedadas.',
+        'Hasta que una noche me llevaste al mirador de Monteblanco.',
+        'Hablamos tranquilos, sin prisa.',
+        'Estabas en tu máximo esplendor.',
+        'Se notaba que conmigo estabas cómodo.',
+        'Y yo me moría de ganas de besarte.',
+        'Pero estaba muy nervioso.',
+        'Tú venías de una etapa no muy buena y no querías nada.',
+        'Así que me aguanté.',
+        '(Lo que me costó, Kito. Lo que me costó.)',
+      ],
+    },
+    {
+      tipo: 'novela',
+      libro: 'Cuando menos lo esperas',
+      titulo: 'El Faro Rojo',
+      cuando: 'El primer beso',
+      emoji: '🌊',
+      color: '#8a2f3b',
+      cancion: null,
+      foto: 'fotos/05.jpg',
+      pie: 'Mi sitio favorito. Ahora, el nuestro.',
+      parrafos: [
+        'En nuestra siguiente quedada lo llevé al Faro Rojo. Mi sitio favorito de Cartagena. Si iba a enseñarle algo que fuera mío de verdad, tenía que ser eso.',
+        'No pasó nada. Y, aun así, fue perfecto: el mar, la noche y esa calma extraña de estar exactamente donde quieres estar, con quien quieres estar.',
+        'Fue en el camino de vuelta cuando Alejandro —Kito, para mí— decidió abrir el melón.',
+        '—¿Qué es lo que está pasando entre nosotros?',
+        'Nunca en mi vida me había abierto tanto con alguien. Esa noche lo hice con él.',
+        'Y entonces, por fin, nos dimos el primer beso.',
+      ],
+      resena: {
+        texto: 'Más intensa que Binding 13.',
+        autor: 'Un lector nada imparcial (yo)',
+      },
+    },
+    {
+      titulo: 'Desde entonces',
+      cuando: 'Hoy',
+      emoji: '✨',
+      color: '#7a5a1f',
+      cancion: null,
+      foto: 'fotos/06.jpg',
+      pie: 'Tres meses y los que vengan',
+      extra: 'stats',
+      lineas: [
+        'Y desde esa noche…',
+        'todo es maravilloso.',
+        'Si esto fuera Kimetsu no Yaiba…',
+        'Respiración del Mar Menor, primera forma:',
+        'escribirme un 1 de julio. 🌊',
+        'Y si fuera Haikyu…',
+        'tú colocaste el balón,',
+        'y yo no pensaba dejarlo caer. 🏐',
+        'Tres meses, Kito.',
+        'Y esto solo es la primera temporada.',
+      ],
+    },
+  ],
+
+  oculta: { titulo: 'Como Estrellas', artista: 'LA YOUNG', spotify: '' },
+
+  carta: {
+    parrafos: [
+      'Sé que tu cumpleaños ya pasó y que no pude regalarte nada.',
+      'Así que he hecho lo que mejor se me da: programarte algo. Cada línea de esto la he escrito pensando en ti.',
+      'Gracias por escribirme aquel 1 de julio. Gracias por abrir el melón en el camino de vuelta del faro. Y gracias por ser la persona con la que más me he abierto en mi vida.',
+      'Feliz cumpleaños (con retraso) y feliz 3 meses.',
+    ],
+    frase: 'Cuando menos lo esperas, es cuando aparece. Y apareciste tú.',
+  },
+};
+
+/* ===================================================================== */
+
+const CAPS = HISTORIA.capitulos;
+const LAST = CAPS.length - 1;
+const $ = s => document.querySelector(s);
+const ICON_PLAY = '<svg width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+const ICON_PAUSE = '<svg width="26" height="26" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor"/></svg>';
+const ICON_REPLAY = '<svg width="26" height="26" viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z" fill="currentColor"/></svg>';
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let done = new Set(store.get('kito-done', []));
+const unlocked = () => done.has(LAST);
+
+function show(id, tint) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+  document.body.classList.toggle('tinted', !!tint);
+  if (tint) document.body.style.setProperty('--tint', tint);
+  window.scrollTo(0, 0);
+}
+
+let toastT;
+function toast(text) {
+  const t = $('#toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function paintThumb(el, cap) {
+  el.style.backgroundImage = `linear-gradient(135deg, ${cap.color}, #11142a)`;
+  el.textContent = cap.emoji;
+  if (!cap.foto) return;
+  const img = new Image();
+  img.onload = () => { el.style.backgroundImage = `url("${cap.foto}")`; el.textContent = ''; };
+  img.src = cap.foto;
+}
+
+function polaroid(src, pie) {
+  const fig = document.createElement('figure');
+  fig.className = 'polaroid';
+  const cap = document.createElement('figcaption');
+  cap.textContent = pie;
+  const img = new Image();
+  img.alt = pie;
+  img.onerror = () => {
+    const ph = document.createElement('div');
+    ph.className = 'ph';
+    ph.textContent = `📷 Aquí va la foto\n(${src})`;
+    img.replaceWith(ph);
+  };
+  img.src = src;
+  fig.append(img, cap);
+  return fig;
+}
+
+function embed(box, song) {
+  box.innerHTML = '';
+  if (!song || !song.spotify) return;
+  const f = document.createElement('iframe');
+  f.src = `https://open.spotify.com/embed/track/${song.spotify}?theme=0`;
+  f.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+  f.loading = 'lazy';
+  box.append(f);
+}
+
+/* ---------- Candado ---------- */
+let tries = 0;
+$('#lock-kicker').textContent = `Para ${HISTORIA.para}`;
+$('#lock-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = $('#code');
+  const msg = $('#lock-msg');
+  audio(); // desbloquea el audio con este primer toque
+  if (input.value.trim() === HISTORIA.codigo) {
+    msg.className = 'msg good';
+    msg.textContent = '¡Nice receive! 🏐';
+    store.set('kito-open', true);
+    setTimeout(openHome, 1200);
+    return;
+  }
+  tries++;
+  msg.className = 'msg bad';
+  msg.textContent = tries < 2 ? 'Casi… 🤏 prueba otra vez' : 'Pista: día y mes en que me escribiste (ddmm)';
+  input.classList.remove('shake');
+  void input.offsetWidth;
+  input.classList.add('shake');
+  input.select();
+});
+
+/* ---------- Lista ---------- */
+function openHome() {
+  stopTimer();
+  stopMic();
+  renderHome();
+  show('home');
+}
+
+function renderHome() {
+  $('#byline').textContent = `${HISTORIA.de} · para ${HISTORIA.nombre} · ${CAPS.length} capítulos + 1 oculta`;
+  $('#foot-de').textContent = HISTORIA.de;
+  const n = CAPS.filter((_, i) => done.has(i)).length;
+  $('#progress-label').textContent = n === 0 ? 'Empieza por aquí' : n === CAPS.length ? 'Escuchada entera 💛' : `${n} de ${CAPS.length} escuchados`;
+
+  const list = $('#tracks');
+  list.innerHTML = '';
+  CAPS.forEach((cap, i) => {
+    const li = document.createElement('li');
+    li.className = 'track' + (done.has(i) ? ' done' : '');
+    li.innerHTML = `<span class="num"></span><div class="thumb"></div>
+      <div class="t-body"><div class="t-title"></div><div class="t-sub"></div></div>`;
+    li.querySelector('.num').textContent = done.has(i) ? '✓' : i + 1;
+    paintThumb(li.querySelector('.thumb'), cap);
+    li.querySelector('.t-title').textContent = cap.titulo;
+    li.querySelector('.t-sub').textContent = cap.tipo === 'novela'
+      ? '📖 Extracto de la novela'
+      : cap.cancion ? `${cap.cancion.titulo} · ${cap.cancion.artista}` : cap.cuando;
+    li.addEventListener('click', () => openChapter(i));
+    list.append(li);
+  });
+
+  const o = HISTORIA.oculta;
+  const li = document.createElement('li');
+  li.className = 'track secret' + (unlocked() ? '' : ' locked');
+  li.innerHTML = `<span class="num">${unlocked() ? '✨' : '🔒'}</span>
+    <div class="thumb" style="background-image:linear-gradient(135deg,#6b4e12,#11142a)">${unlocked() ? '🎂' : '?'}</div>
+    <div class="t-body"><div class="t-title"></div><div class="t-sub"></div></div>`;
+  li.querySelector('.t-title').textContent = unlocked() ? o.titulo : 'Pista oculta';
+  li.querySelector('.t-sub').textContent = unlocked() ? o.artista : 'Se desbloquea al final';
+  li.addEventListener('click', () => unlocked() ? openCake() : toast('🔒 Esta se desbloquea al final. Sin spoilers.'));
+  list.append(li);
+}
+
+$('#play-all').addEventListener('click', () => {
+  const next = CAPS.findIndex((_, i) => !done.has(i));
+  if (next === -1 && unlocked()) openCake();
+  else openChapter(next === -1 ? 0 : next);
+});
+
+function buildCover() {
+  const cover = $('#cover');
+  for (let i = 0; i < 28; i++) {
+    const d = document.createElement('span');
+    const s = Math.random() * 2 + 1;
+    d.className = 'dot';
+    Object.assign(d.style, {
+      width: s + 'px', height: s + 'px',
+      left: Math.random() * 100 + '%', top: Math.random() * 70 + '%',
+      opacity: .4 + Math.random() * .6,
+    });
+    cover.append(d);
+  }
+}
+
+/* ---------- Reproductor ---------- */
+let P = { i: 0, idx: 0, items: [], playing: false, finished: false, t: null, box: null };
+
+function stopTimer() { clearTimeout(P.t); }
+
+function openChapter(i) {
+  stopTimer();
+  const cap = CAPS[i];
+  const novela = cap.tipo === 'novela';
+  P = { i, idx: 0, items: novela ? cap.parrafos : cap.lineas, playing: true, finished: false, t: null, box: null };
+
+  $('#p-num').innerHTML = `Capítulo ${i + 1} de ${CAPS.length}<b>${HISTORIA.para}</b>`;
+  paintThumb($('#p-thumb'), cap);
+  $('#p-title').textContent = cap.titulo;
+  $('#p-song').textContent = cap.cancion ? `♪ ${cap.cancion.titulo} · ${cap.cancion.artista}` : cap.cuando;
+  embed($('#p-embed'), cap.cancion);
+  $('#hint').style.display = i === 0 ? '' : 'none';
+
+  const stage = $('#stage');
+  stage.innerHTML = '';
+  stage.scrollTop = 0;
+  if (novela) {
+    const paper = document.createElement('article');
+    paper.className = 'paper';
+    paper.innerHTML = `<div class="from">Extracto de la novela</div><h3></h3>
+      <div class="from"></div><div class="ornament">✦ ✦ ✦</div><div class="body"></div>`;
+    paper.querySelector('h3').textContent = `«${cap.libro}»`;
+    paper.querySelectorAll('.from')[1].textContent = `Capítulo ${i + 1} · ${cap.titulo}`;
+    stage.append(paper);
+    P.box = paper.querySelector('.body');
+  } else {
+    P.box = stage;
+  }
+
+  updateBar();
+  setPP();
+  show('player', cap.color);
+  P.t = setTimeout(advance, 800);
+}
+
+function dur(text, novela) {
+  return novela ? Math.min(12000, 1800 + text.length * 60) : Math.min(5200, 1300 + text.length * 48);
+}
+
+function advance() {
+  stopTimer();
+  if (P.idx >= P.items.length) return;
+  const cap = CAPS[P.i];
+  const novela = cap.tipo === 'novela';
+  const text = P.items[P.idx];
+  const el = document.createElement('p');
+  if (novela) {
+    if (P.idx === 0) el.className = 'first';
+    if (text.startsWith('—')) el.classList.add('dialog');
+  } else {
+    P.box.querySelectorAll('.line.now').forEach(n => n.classList.remove('now'));
+    el.className = 'line now';
+  }
+  el.textContent = text;
+  P.box.append(el);
+  P.idx++;
+  updateBar();
+  scrollStage();
+  if (P.idx >= P.items.length) P.t = setTimeout(finish, novela ? 2200 : 1600);
+  else if (P.playing) P.t = setTimeout(advance, dur(text, novela));
+}
+
+function finish() {
+  stopTimer();
+  if (P.finished) return;
+  P.finished = true;
+  P.playing = false;
+  const i = P.i;
+  const cap = CAPS[i];
+  done.add(i);
+  store.set('kito-done', [...done]);
+  $('#stage .line.now')?.classList.remove('now');
+
+  const stage = $('#stage');
+  if (cap.tipo === 'novela') {
+    const end = document.createElement('p');
+    end.className = 'end';
+    end.textContent = `— Fin del capítulo ${i + 1} —`;
+    P.box.append(end);
+    if (cap.resena) {
+      const r = document.createElement('div');
+      r.className = 'review';
+      r.innerHTML = '<span class="stars">★★★★★</span><q></q><br>— <span></span>';
+      r.querySelector('q').textContent = cap.resena.texto;
+      r.querySelector('span:last-child').textContent = cap.resena.autor;
+      stage.append(r);
+    }
+  }
+
+  const outro = document.createElement('div');
+  outro.className = 'outro';
+  outro.append(polaroid(cap.foto, cap.pie));
+
+  if (cap.extra === 'stats') {
+    const days = Math.floor((Date.now() - new Date(HISTORIA.inicio)) / 864e5);
+    const stats = document.createElement('div');
+    stats.className = 'stats';
+    [
+      [days, 'días desde tu mensaje'],
+      [HISTORIA.cancionesEnKito, 'canciones en «Kito»'],
+      ['1', 'faro rojo (y el primer beso)'],
+      ['∞', 'ganas de más capítulos'],
+    ].forEach(([n, l]) => {
+      const s = document.createElement('div');
+      s.className = 'stat';
+      s.innerHTML = '<b></b><span></span>';
+      s.querySelector('b').textContent = n;
+      s.querySelector('span').textContent = l;
+      stats.append(s);
+    });
+    const live = document.createElement('p');
+    live.className = 'live';
+    live.id = 'live';
+    outro.append(stats, live);
+    tickLive();
+  }
+
+  const btns = document.createElement('div');
+  btns.className = 'row-btns';
+  if (i < LAST) {
+    const next = document.createElement('button');
+    next.className = 'btn';
+    next.textContent = 'Siguiente capítulo →';
+    next.onclick = () => openChapter(i + 1);
+    btns.append(next);
+  } else {
+    const u = document.createElement('p');
+    u.className = 'unlock';
+    u.textContent = '🔓 Has desbloqueado una pista oculta';
+    outro.append(u);
+    const go = document.createElement('button');
+    go.className = 'btn';
+    go.textContent = 'Escucharla ✨';
+    go.onclick = openCake;
+    btns.append(go);
+  }
+  const back = document.createElement('button');
+  back.className = 'btn btn-ghost';
+  back.textContent = 'Lista';
+  back.onclick = openHome;
+  btns.append(back);
+  outro.append(btns);
+
+  stage.append(outro);
+  setPP();
+  updateBar();
+  scrollStage();
+}
+
+function scrollStage() {
+  const stage = $('#stage');
+  requestAnimationFrame(() => stage.scrollTo({ top: stage.scrollHeight, behavior: 'smooth' }));
+}
+
+function updateBar() {
+  const cap = CAPS[P.i];
+  const pct = P.finished ? 100 : (P.idx / P.items.length) * 100;
+  $('#bar').style.width = pct + '%';
+  $('#bar-l').textContent = `${Math.min(P.idx, P.items.length)}/${P.items.length}`;
+  $('#bar-r').textContent = cap.cuando;
+}
+
+function setPP() {
+  $('#pp').innerHTML = P.finished ? ICON_REPLAY : P.playing ? ICON_PAUSE : ICON_PLAY;
+}
+
+$('#stage').addEventListener('click', e => {
+  if (P.finished || e.target.closest('button')) return;
+  if (P.idx < P.items.length) advance();
+  else finish();
+});
+$('#pp').addEventListener('click', () => {
+  if (P.finished) return openChapter(P.i);
+  P.playing = !P.playing;
+  stopTimer();
+  if (P.playing) P.t = setTimeout(P.idx < P.items.length ? advance : finish, 400);
+  setPP();
+});
+$('#prev').addEventListener('click', () => openChapter(Math.max(0, P.i - 1)));
+$('#next').addEventListener('click', () => {
+  if (P.i < LAST) openChapter(P.i + 1);
+  else if (unlocked()) openCake();
+  else toast('Termina este capítulo para desbloquear la pista oculta ✨');
+});
+$('#back').addEventListener('click', openHome);
+
+function tickLive() {
+  const el = document.getElementById('live');
+  if (!el) return;
+  let s = Math.floor((Date.now() - new Date(HISTORIA.inicio)) / 1000);
+  const d = Math.floor(s / 86400); s %= 86400;
+  const h = Math.floor(s / 3600); s %= 3600;
+  const m = Math.floor(s / 60); s %= 60;
+  el.textContent = `${d} días, ${h} h, ${m} min y ${s} s desde que me escribiste`;
+}
+setInterval(tickLive, 1000);
+
+/* ---------- Audio: violín sintetizado ---------- */
+let AC;
+function audio() {
+  AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+
+const N = { G4: 392, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99 };
+const CUMPLE = [
+  ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['C5', 1], ['B4', 2],
+  ['G4', .75], ['G4', .25], ['A4', 1], ['G4', 1], ['D5', 1], ['C5', 2],
+  ['G4', .75], ['G4', .25], ['G5', 1], ['E5', 1], ['C5', 1], ['B4', 1], ['A4', 2],
+  ['F5', .75], ['F5', .25], ['E5', 1], ['C5', 1], ['D5', 1], ['C5', 3],
+];
+
+function playViolin(notes, beat = .42) {
+  const ctx = audio();
+  const out = ctx.createGain();
+  out.gain.value = .16;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 2800;
+  lp.connect(out).connect(ctx.destination);
+  let t = ctx.currentTime + .08;
+  for (const [n, b] of notes) {
+    const f = N[n], d = b * beat;
+    const o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = f;
+    const vib = ctx.createOscillator();
+    vib.frequency.value = 5.6;
+    const depth = ctx.createGain();
+    depth.gain.setValueAtTime(0, t);
+    depth.gain.linearRampToValueAtTime(f * .007, t + Math.min(.3, d));
+    vib.connect(depth).connect(o.frequency);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + .07);
+    g.gain.setValueAtTime(1, t + d * .82);
+    g.gain.linearRampToValueAtTime(0, t + d * .98);
+    o.connect(g).connect(lp);
+    o.start(t); vib.start(t);
+    o.stop(t + d); vib.stop(t + d);
+    t += d;
+  }
+}
+
+$('#violin').addEventListener('click', () => {
+  playViolin([['G4', .5], ['B4', .5], ['D5', .5], ['G5', 1.5]], .3);
+  toast('🎻 Para mi violinista favorito');
+});
+
+/* ---------- Tarta ---------- */
+let mic = { stream: null, raf: 0 };
+
+function openCake() {
+  stopTimer();
+  const o = HISTORIA.oculta;
+  $('#cake-title').textContent = o.titulo;
+  $('#cake-artist').textContent = o.artista;
+  $('#cake-status').textContent = 'Pide un deseo y sopla las velas';
+  $('#cake-actions').style.display = '';
+  $('#carta').className = 'carta';
+  $('#cake-embed').innerHTML = '';
+
+  const box = $('#candles');
+  box.innerHTML = '';
+  for (let i = 0; i < HISTORIA.velas; i++) {
+    const c = document.createElement('div');
+    c.className = 'candle';
+    c.innerHTML = '<div class="flame"></div>';
+    c.addEventListener('click', () => { audio(); blowOut(c); });
+    box.append(c);
+  }
+  show('cake', '#6b4e12');
+}
+
+function blowOut(c) {
+  if (c.classList.contains('out')) return;
+  c.classList.add('out');
+  const s = document.createElement('div');
+  s.className = 'smoke';
+  c.append(s);
+  setTimeout(() => s.remove(), 1500);
+  if (!document.querySelector('.candle:not(.out)')) {
+    stopMic();
+    setTimeout(celebrate, 700);
+  }
+}
+
+async function startMic() {
+  const status = $('#cake-status');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mic.stream = stream;
+    const ctx = audio();
+    const an = ctx.createAnalyser();
+    an.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(an);
+    const buf = new Float32Array(an.fftSize);
+    let strong = 0, last = 0;
+    status.textContent = 'Sopla fuerte… 🌬️';
+    const loop = ts => {
+      an.getFloatTimeDomainData(buf);
+      let sum = 0;
+      for (const v of buf) sum += v * v;
+      const rms = Math.sqrt(sum / buf.length);
+      if (rms > .09) {
+        strong++;
+        if (strong > 5 && ts - last > 220) {
+          const lit = [...document.querySelectorAll('.candle:not(.out)')];
+          if (lit.length) { blowOut(lit[Math.floor(Math.random() * lit.length)]); last = ts; }
+        }
+      } else {
+        strong = Math.max(0, strong - 2);
+      }
+      if (mic.stream) mic.raf = requestAnimationFrame(loop);
+    };
+    mic.raf = requestAnimationFrame(loop);
+  } catch {
+    status.textContent = 'No puedo usar el micro 😢 Toca las velas para apagarlas.';
+  }
+}
+
+function stopMic() {
+  cancelAnimationFrame(mic.raf);
+  mic.stream?.getTracks().forEach(t => t.stop());
+  mic.stream = null;
+}
+
+function celebrate() {
+  $('#cake-status').textContent = '¡Deseo concedido! ✨';
+  $('#cake-actions').style.display = 'none';
+  playViolin(CUMPLE);
+  if (window.confetti) {
+    const colors = ['#f6c96b', '#ff8fab', '#ffffff', '#8fb8ff'];
+    const end = Date.now() + 2800;
+    (function frame() {
+      confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0, y: .7 }, colors });
+      confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1, y: .7 }, colors });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }
+
+  const c = HISTORIA.carta;
+  const carta = $('#carta');
+  carta.innerHTML = '<h2></h2>';
+  carta.querySelector('h2').textContent = `¡Feliz cumpleaños, ${HISTORIA.para}!`;
+  c.parrafos.forEach(t => { const p = document.createElement('p'); p.textContent = t; carta.append(p); });
+  const q = document.createElement('blockquote');
+  q.textContent = `«${c.frase}»`;
+  const f = document.createElement('p');
+  f.className = 'firma';
+  f.textContent = `— ${HISTORIA.de} 💛`;
+  carta.append(q, f);
+  setTimeout(() => {
+    carta.classList.add('show');
+    embed($('#cake-embed'), HISTORIA.oculta);
+    carta.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 1400);
+}
+
+$('#mic').addEventListener('click', startMic);
+$('#cake-back').addEventListener('click', openHome);
+
+/* ---------- Cielo estrellado ---------- */
+(function sky() {
+  const cv = $('#sky'), cx = cv.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, stars = [], shoot = null;
+  function resize() {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stars = Array.from({ length: Math.round(W * H / 4500) }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 1.2 + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4,
+    }));
+  }
+  function draw(t) {
+    cx.clearRect(0, 0, W, H);
+    cx.fillStyle = '#fff';
+    for (const s of stars) {
+      cx.globalAlpha = .25 + .75 * (.5 + .5 * Math.sin(t / 1000 * s.s + s.p));
+      cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.28); cx.fill();
+    }
+    if (!shoot && Math.random() < .004) {
+      shoot = { x: W * (.3 + Math.random() * .7), y: H * Math.random() * .35, vx: -8, vy: 3.4, life: 1 };
+    }
+    if (shoot) {
+      const g = cx.createLinearGradient(shoot.x, shoot.y, shoot.x - shoot.vx * 14, shoot.y - shoot.vy * 14);
+      g.addColorStop(0, `rgba(255,255,255,${shoot.life})`);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      cx.globalAlpha = 1; cx.strokeStyle = g; cx.lineWidth = 1.6;
+      cx.beginPath(); cx.moveTo(shoot.x, shoot.y); cx.lineTo(shoot.x - shoot.vx * 14, shoot.y - shoot.vy * 14); cx.stroke();
+      shoot.x += shoot.vx; shoot.y += shoot.vy; shoot.life -= .02;
+      if (shoot.life <= 0) shoot = null;
+    }
+    cx.globalAlpha = 1;
+    if (!still) requestAnimationFrame(draw);
+  }
+  addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+
+/* ---------- Cuenta atrás ---------- */
+let waitT, shownClues = -1;
+const pad = n => String(n).padStart(2, '0');
+
+function showWait() {
+  $('#wait-kicker').textContent = `Para ${HISTORIA.para}`;
+  const e = new Date(HISTORIA.entrega);
+  $('#when').textContent = e.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+    + ' · ' + e.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  show('wait');
+  tickCount();
+  waitT = setInterval(tickCount, 1000);
+}
+
+function tickCount() {
+  const ms = new Date(HISTORIA.entrega) - Date.now();
+  if (ms <= 0) {
+    clearInterval(waitT);
+    caw();
+    toast('¡CAAAW! ¡Ya es la hora!');
+    show('lock');
+    return;
+  }
+  let s = Math.floor(ms / 1000);
+  const v = { d: Math.floor(s / 86400), h: pad(Math.floor(s % 86400 / 3600)), m: pad(Math.floor(s % 3600 / 60)), s: pad(s % 60) };
+  document.querySelectorAll('#count b').forEach(b => { b.textContent = v[b.dataset.u]; });
+  const n = HISTORIA.pistas.filter(p => Date.now() >= new Date(p.desde)).length;
+  if (n !== shownClues) renderClues(n);
+}
+
+function renderClues(n) {
+  shownClues = n;
+  const list = $('#clues');
+  list.innerHTML = '';
+  HISTORIA.pistas.forEach((p, i) => {
+    const open = i < n;
+    const li = document.createElement('li');
+    li.className = 'clue' + (open ? (i === n - 1 ? ' new' : '') : ' locked');
+    li.style.animationDelay = i * 80 + 'ms';
+    li.innerHTML = '<div class="c-head"><span></span><span class="c-tag"></span></div><div class="c-text"></div>';
+    li.querySelector('.c-head span').textContent = `Pista ${i + 1}`;
+    li.querySelector('.c-tag').textContent = !open
+      ? '🔒 ' + new Date(p.desde).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).replace(',', '')
+      : i === n - 1 ? 'Nueva' : '';
+    li.querySelector('.c-text').textContent = open ? p.texto : 'El cuervo todavía no ha llegado…';
+    list.append(li);
+  });
+}
+
+function caw() {
+  const ctx = audio();
+  [0, .32].forEach(off => {
+    const t = ctx.currentTime + off;
+    const o = ctx.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(820, t);
+    o.frequency.exponentialRampToValueAtTime(420, t + .26);
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1200;
+    bp.Q.value = 1.2;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(.35, t + .02);
+    g.gain.exponentialRampToValueAtTime(.001, t + .28);
+    o.connect(bp).connect(g).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + .3);
+  });
+}
+
+const CROW_LINES = ['¡CAW! ¡Sin spoilers!', '¡CAW! ¡Paciencia, cazador!', '¡CAW! ¡Vuelve mañana a por otra pista!', '¡CAW! ¡No insistas, soy una tumba!'];
+$('#crow').addEventListener('click', () => {
+  caw();
+  toast(CROW_LINES[Math.floor(Math.random() * CROW_LINES.length)]);
+});
+
+/* ---------- Arranque ---------- */
+buildCover();
+const preview = new URLSearchParams(location.search).has('preview');
+if (!preview && Date.now() < new Date(HISTORIA.entrega)) showWait();
+else if (store.get('kito-open', false)) openHome();
+else show('lock');
+</script>
+</body>
+</html>
