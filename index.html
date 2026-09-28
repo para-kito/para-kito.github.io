@@ -452,10 +452,10 @@ const HISTORIA = {
   entrega: '2026-10-02T22:00:00',
   pistas: [
     { desde: '2026-09-28T00:00:00', texto: '¡CAW! Tienes un regalo en camino. Tiene banda sonora… y tú ya te sabes casi todas las canciones. 🎵' },
-    { desde: '2026-09-29T00:00:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
-    { desde: '2026-09-30T00:00:00', texto: '¡CAW! Salen un mojito, un mirador y un faro. Rojo, para más señas.' },
-    { desde: '2026-10-01T00:00:00', texto: '¡CAW! Hoy hacéis 3 meses 💛 Para abrir tu regalo vas a necesitar una fecha. Piensa cuál.' },
-    { desde: '2026-10-02T09:00:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto y pulmones preparados. 🌬️' },
+    { desde: '2026-09-29T07:30:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
+    { desde: '2026-09-30T07:30:00', texto: '¡CAW! Salen un mojito, un mirador y un faro. Rojo, para más señas.' },
+    { desde: '2026-10-01T07:30:00', texto: '¡CAW! Hoy hacéis 3 meses 💛 Para abrir tu regalo vas a necesitar una fecha. Piensa cuál.' },
+    { desde: '2026-10-02T07:30:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto y pulmones preparados. 🌬️' },
   ],
 
   capitulos: [
@@ -1210,6 +1210,7 @@ function renderClues(n) {
     li.querySelector('.c-head span').textContent = `Pista ${i + 1}`;
     li.querySelector('.c-tag').textContent = !open
       ? '🔒 ' + new Date(p.desde).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }).replace(',', '')
+        + ' · ' + new Date(p.desde).toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' })
       : i === n - 1 ? 'Nueva' : '';
     li.querySelector('.c-text').textContent = open ? p.texto : 'El cuervo todavía no ha llegado…';
     list.append(li);
