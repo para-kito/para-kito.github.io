@@ -10,9 +10,14 @@
 <meta property="og:url" content="https://para-kito.github.io/">
 <meta property="og:title" content="¡CAW! Kito, tienes una misión nueva 🐦‍⬛">
 <meta property="og:description" content="Tu cuervo mensajero trae una pista nueva cada día. Sin spoilers.">
-<meta property="og:image" content="https://para-kito.github.io/fotos/cuervo.jpg">
-<meta property="og:image:width" content="768">
-<meta property="og:image:height" content="1376">
+<meta property="og:image" content="https://para-kito.github.io/fotos/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Un cuervo con bufanda roja y una carta sellada con un corazón">
+<meta property="og:site_name" content="Para Kito">
+<meta property="og:locale" content="es_ES">
+<meta name="robots" content="noindex, nofollow">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -223,7 +228,7 @@
     background: #fbf8f2; padding: 12px 12px 14px; border-radius: 4px;
     transform: rotate(-2.5deg); box-shadow: 0 18px 40px rgba(0, 0, 0, .55); width: min(290px, 80%);
   }
-  .polaroid img, .polaroid .ph { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; border-radius: 2px; }
+  .polaroid img, .polaroid .ph { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: 50% 28%; display: block; border-radius: 2px; }
   .polaroid .ph {
     display: grid; place-items: center; text-align: center; padding: 14px;
     background: linear-gradient(135deg, #ddd5c7, #b9b0a2); color: #5b544b; font-size: 13px;
@@ -264,7 +269,9 @@
     background: radial-gradient(circle at 50% 72%, #fffbe0 0, #ffd166 38%, #ff8a3d 72%, rgba(255,138,61,0) 80%);
     box-shadow: 0 0 22px 8px rgba(255, 190, 90, .4);
     transform-origin: 50% 100%; animation: flicker .14s infinite alternate;
-    transition: opacity .3s, transform .3s;
+    rotate: calc(var(--wind, 0) * 24deg);
+    scale: calc(1 - var(--wind, 0) * .3) calc(1 + var(--wind, 0) * .25);
+    transition: opacity .3s, transform .3s, rotate .12s linear, scale .12s linear;
   }
   @keyframes flicker { from { transform: scaleY(1) rotate(-2deg); } to { transform: scaleY(1.1) rotate(2deg); } }
   .candle.out .flame { animation: none; opacity: 0; transform: scale(.2) translateY(-10px); }
@@ -455,7 +462,7 @@ const HISTORIA = {
     { desde: '2026-09-29T07:30:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
     { desde: '2026-09-30T07:30:00', texto: '¡CAW! Salen un mojito, un mirador y un faro. Rojo, para más señas.' },
     { desde: '2026-10-01T07:30:00', texto: '¡CAW! Hoy hacéis 3 meses 💛 Para abrir tu regalo vas a necesitar una fecha. Piensa cuál.' },
-    { desde: '2026-10-02T07:30:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto y pulmones preparados. 🌬️' },
+    { desde: '2026-10-02T07:30:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto (y sin modo silencio 🔔) y pulmones preparados. 🌬️' },
   ],
 
   capitulos: [
@@ -694,11 +701,25 @@ $('#lock-form').addEventListener('submit', e => {
 });
 
 /* ---------- Lista ---------- */
-function openHome() {
+function leavePlayer() {
   stopTimer();
+  P.playing = false;
+  P.resume = false;
+}
+
+let preloaded = false;
+function preloadPhotos() {
+  if (preloaded) return;
+  preloaded = true;
+  CAPS.forEach(c => { if (c.foto) new Image().src = c.foto; });
+}
+
+function openHome() {
+  leavePlayer();
   stopMic();
   renderHome();
   show('home');
+  preloadPhotos();
 }
 
 function renderHome() {
@@ -948,6 +969,17 @@ $('#next').addEventListener('click', () => {
 });
 $('#back').addEventListener('click', openHome);
 
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (P.playing && !P.finished) { P.resume = true; P.playing = false; stopTimer(); setPP(); }
+  } else if (P.resume) {
+    P.resume = false;
+    P.playing = true;
+    setPP();
+    P.t = setTimeout(P.idx < P.items.length ? advance : finish, 600);
+  }
+});
+
 function tickLive() {
   const el = document.getElementById('live');
   if (!el) return;
@@ -1013,10 +1045,10 @@ $('#violin').addEventListener('click', () => {
 });
 
 /* ---------- Tarta ---------- */
-let mic = { stream: null, raf: 0 };
+let mic = { stream: null, raf: 0, hint: 0 };
 
 function openCake() {
-  stopTimer();
+  leavePlayer();
   const o = HISTORIA.oculta;
   $('#cake-title').textContent = o.titulo;
   $('#cake-artist').textContent = o.artista;
@@ -1024,8 +1056,12 @@ function openCake() {
   $('#cake-actions').style.display = '';
   $('#carta').className = 'carta';
   $('#cake-embed').innerHTML = '';
+  const mb = $('#mic');
+  mb.disabled = false;
+  mb.textContent = '🎤 Soplar con el micro';
 
   const box = $('#candles');
+  box.style.setProperty('--wind', 0);
   box.innerHTML = '';
   for (let i = 0; i < HISTORIA.velas; i++) {
     const c = document.createElement('div');
@@ -1051,43 +1087,67 @@ function blowOut(c) {
 }
 
 async function startMic() {
+  if (mic.stream) return;
+  audio();   // en el mismo toque y antes del permiso: en iPhone el audio solo arranca así
   const status = $('#cake-status');
+  const btn = $('#mic');
+  btn.disabled = true;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // sin filtros del móvil: el filtro de ruido se come el soplido
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
     mic.stream = stream;
     const ctx = audio();
     const an = ctx.createAnalyser();
     an.fftSize = 1024;
     ctx.createMediaStreamSource(stream).connect(an);
     const buf = new Float32Array(an.fftSize);
-    let strong = 0, last = 0;
+    const candles = $('#candles');
+    let base = 0, seen = 0, wind = 0, strong = 0, last = 0;
     status.textContent = 'Sopla fuerte… 🌬️';
+    btn.textContent = '🎤 Escuchando…';
+    mic.hint = setTimeout(() => {
+      if (mic.stream) status.textContent = '¿No te sale? Toca las velas 👆';
+    }, 9000);
     const loop = ts => {
       an.getFloatTimeDomainData(buf);
       let sum = 0;
       for (const v of buf) sum += v * v;
       const rms = Math.sqrt(sum / buf.length);
-      if (rms > .09) {
-        strong++;
-        if (strong > 5 && ts - last > 220) {
-          const lit = [...document.querySelectorAll('.candle:not(.out)')];
-          if (lit.length) { blowOut(lit[Math.floor(Math.random() * lit.length)]); last = ts; }
-        }
+      if (seen < 20) {                       // el primer instante mide el ruido de fondo
+        base = (base * seen + rms) / (seen + 1);
+        seen++;
       } else {
-        strong = Math.max(0, strong - 2);
+        const limit = Math.max(.06, base * 4);
+        wind = wind * .7 + Math.min(1, rms / (limit * 2)) * .3;
+        candles.style.setProperty('--wind', wind.toFixed(2));
+        if (rms > limit) {
+          strong++;
+          if (strong > 5 && ts - last > 220) {
+            const lit = [...document.querySelectorAll('.candle:not(.out)')];
+            if (lit.length) { blowOut(lit[Math.floor(Math.random() * lit.length)]); last = ts; }
+          }
+        } else {
+          strong = Math.max(0, strong - 2);
+        }
       }
       if (mic.stream) mic.raf = requestAnimationFrame(loop);
     };
     mic.raf = requestAnimationFrame(loop);
   } catch {
+    stopMic();
+    btn.disabled = false;
     status.textContent = 'No puedo usar el micro 😢 Toca las velas para apagarlas.';
   }
 }
 
 function stopMic() {
   cancelAnimationFrame(mic.raf);
+  clearTimeout(mic.hint);
   mic.stream?.getTracks().forEach(t => t.stop());
   mic.stream = null;
+  $('#candles').style.setProperty('--wind', 0);
 }
 
 function celebrate() {
@@ -1135,17 +1195,20 @@ $('#cake-back').addEventListener('click', openHome);
     W = innerWidth; H = innerHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    stars = Array.from({ length: Math.round(W * H / 4500) }, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      r: Math.random() * 1.2 + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4,
-    }));
+    if (!stars.length) {
+      stars = Array.from({ length: Math.round(W * H / 4500) }, () => ({
+        x: Math.random(), y: Math.random(),   // en proporción, para que no salten al cambiar el tamaño
+        r: Math.random() * 1.2 + .2, p: Math.random() * 6.28, s: .4 + Math.random() * 1.4,
+      }));
+    }
+    if (still) draw(performance.now());
   }
   function draw(t) {
     cx.clearRect(0, 0, W, H);
     cx.fillStyle = '#fff';
     for (const s of stars) {
       cx.globalAlpha = .25 + .75 * (.5 + .5 * Math.sin(t / 1000 * s.s + s.p));
-      cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, 6.28); cx.fill();
+      cx.beginPath(); cx.arc(s.x * W, s.y * H, s.r, 0, 6.28); cx.fill();
     }
     if (!shoot && Math.random() < .004) {
       shoot = { x: W * (.3 + Math.random() * .7), y: H * Math.random() * .35, vx: -8, vy: 3.4, life: 1 };
@@ -1185,7 +1248,7 @@ function tickCount() {
   const ms = new Date(HISTORIA.entrega) - Date.now();
   if (ms <= 0) {
     clearInterval(waitT);
-    caw();
+    if (AC && AC.state === 'running') caw();
     toast('¡CAAAW! ¡Ya es la hora!');
     show('lock');
     return;
@@ -1194,7 +1257,14 @@ function tickCount() {
   const v = { d: Math.floor(s / 86400), h: pad(Math.floor(s % 86400 / 3600)), m: pad(Math.floor(s % 3600 / 60)), s: pad(s % 60) };
   document.querySelectorAll('#count b').forEach(b => { b.textContent = v[b.dataset.u]; });
   const n = HISTORIA.pistas.filter(p => Date.now() >= new Date(p.desde)).length;
-  if (n !== shownClues) renderClues(n);
+  if (n !== shownClues) {
+    const fresh = shownClues !== -1 && n > shownClues;
+    renderClues(n);
+    if (fresh) {
+      toast('🐦‍⬛ ¡CAW! Pista nueva');
+      if (AC && AC.state === 'running') caw();
+    }
+  }
 }
 
 function renderClues(n) {
