@@ -260,6 +260,8 @@
   }
   .lightbox[hidden] { display: none; }
   .lightbox img { max-width: 100%; max-height: calc(100dvh - 130px); object-fit: contain; border-radius: 6px; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
+  .lightbox video { max-width: 100%; max-height: calc(100dvh - 130px); border-radius: 6px; background: #000; }
+  .lightbox video[hidden], .lightbox img[hidden] { display: none; }
   .lightbox p { font: 600 22px/1.2 Caveat, cursive; text-align: center; }
   .lightbox .x { position: absolute; top: max(10px, env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 22px; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
@@ -334,8 +336,12 @@
   .galeria h3 { font: 800 22px/1.2 Fraunces, serif; text-align: center; margin-bottom: 4px; }
   .galeria .sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 12px; }
   .g-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .g-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; padding: 0; background: var(--surface); cursor: zoom-in; }
+  .g-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; padding: 0; background: var(--surface); cursor: zoom-in; }
   .g-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .g-item.is-video::after {
+    content: '▶'; position: absolute; inset: 0; display: grid; place-items: center;
+    font-size: 30px; color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .7); background: rgba(0, 0, 0, .15);
+  }
   .final {
     display: none; width: 100%; margin-top: 18px; text-align: center; padding: 22px 20px;
     border: 1px dashed rgba(246, 201, 107, .55); border-radius: 18px; background: rgba(246, 201, 107, .06);
@@ -495,6 +501,7 @@
 <div class="lightbox" id="lightbox" hidden>
   <button class="x" id="lb-x" aria-label="Cerrar">✕</button>
   <img alt="">
+  <video playsinline controls preload="none" hidden></video>
   <p></p>
 </div>
 
@@ -518,7 +525,7 @@ const HISTORIA = {
   cancionesEnKito: 22,
 
   // Hasta esta hora se ve la cuenta atrás. Para probar el regalo antes: añade ?preview a la URL
-  entrega: '2026-10-02T22:00:00+02:00',
+  entrega: '2026-10-02T23:00:00+02:00',
   pistas: [
     { desde: '2026-09-28T00:00:00+02:00', texto: '¡CAW! Tienes un regalo en camino. Tiene banda sonora… y tú ya te sabes casi todas las canciones. 🎵' },
     { desde: '2026-09-29T07:30:00+02:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
@@ -679,9 +686,27 @@ const HISTORIA = {
   galeria: {
     titulo: 'Nuestros 3 meses en fotos',
     fotos: [
-      { foto: 'fotos/02.jpg', completa: 'fotos/full/02.jpg', pie: '1 de julio, 19:08' },
-      { foto: 'fotos/03.jpg', completa: 'fotos/full/03.jpg', pie: 'El primer mojito' },
-      { foto: 'fotos/06.jpg', completa: 'fotos/full/06.jpg', pie: 'Tú y yo, reflejados' },
+      { foto: 'fotos/galeria/01.jpg', completa: 'fotos/galeria/full/01.jpg', pie: '21 de julio' },
+      { foto: 'fotos/galeria/02.jpg', completa: 'fotos/galeria/full/02.jpg', pie: '22 de julio' },
+      { foto: 'fotos/galeria/03.jpg', completa: 'fotos/galeria/full/03.jpg', pie: '24 de julio' },
+      { foto: 'fotos/galeria/04.jpg', completa: 'fotos/galeria/full/04.jpg', pie: 'Una rosa, a boli' },
+      { foto: 'fotos/galeria/05.jpg', completa: 'fotos/galeria/full/05.jpg', pie: '7 de agosto' },
+      { foto: 'fotos/galeria/06.jpg', completa: 'fotos/galeria/full/06.jpg', pie: '18 de agosto' },
+      { foto: 'fotos/galeria/07.jpg', completa: 'fotos/galeria/full/07.jpg', pie: '23 de agosto' },
+      { foto: 'fotos/galeria/08.jpg', video: 'fotos/galeria/08.mp4', pie: '23 de agosto' },
+      { foto: 'fotos/galeria/09.jpg', completa: 'fotos/galeria/full/09.jpg', pie: '29 de agosto' },
+      { foto: 'fotos/galeria/10.jpg', completa: 'fotos/galeria/full/10.jpg', pie: '4 de septiembre' },
+      { foto: 'fotos/galeria/11.jpg', completa: 'fotos/galeria/full/11.jpg', pie: '12 de septiembre' },
+      { foto: 'fotos/galeria/13.jpg', completa: 'fotos/galeria/full/13.jpg', pie: '13 de septiembre' },
+      { foto: 'fotos/galeria/14.jpg', completa: 'fotos/galeria/full/14.jpg', pie: '13 de septiembre' },
+      { foto: 'fotos/galeria/15.jpg', completa: 'fotos/galeria/full/15.jpg', pie: '14 de septiembre' },
+      { foto: 'fotos/galeria/16.jpg', completa: 'fotos/galeria/full/16.jpg', pie: '16 de septiembre' },
+      { foto: 'fotos/galeria/17.jpg', completa: 'fotos/galeria/full/17.jpg', pie: '18 de septiembre' },
+      { foto: 'fotos/galeria/18.jpg', completa: 'fotos/galeria/full/18.jpg', pie: '18 de septiembre' },
+      { foto: 'fotos/galeria/19.jpg', completa: 'fotos/galeria/full/19.jpg', pie: '18 de septiembre' },
+      { foto: 'fotos/galeria/20.jpg', completa: 'fotos/galeria/full/20.jpg', pie: 'Ramen 🍜' },
+      { foto: 'fotos/galeria/21.jpg', completa: 'fotos/galeria/full/21.jpg', pie: 'Más ramen 🍜' },
+      { foto: 'fotos/galeria/22.jpg', completa: 'fotos/galeria/full/22.jpg', pie: '24 de septiembre' },
     ],
   },
 
@@ -778,7 +803,8 @@ function buildGallery() {
     img.onerror = () => b.remove();
     img.src = f.foto;
     b.append(img);
-    b.addEventListener('click', () => openLightbox(f.completa || f.foto, f.pie));
+    if (f.video) b.classList.add('is-video');
+    b.addEventListener('click', () => f.video ? openLightbox(f.video, f.pie, 'video') : openLightbox(f.completa || f.foto, f.pie));
     grid.append(b);
   });
   box.append(h, sub, grid);
@@ -786,9 +812,20 @@ function buildGallery() {
 }
 
 /* ---------- Visor de foto entera ---------- */
-function openLightbox(src, text) {
+function openLightbox(src, text, kind) {
   const lb = $('#lightbox');
-  lb.querySelector('img').src = src;
+  const img = lb.querySelector('img'), vid = lb.querySelector('video');
+  if (kind === 'video') {
+    img.hidden = true;
+    img.removeAttribute('src');
+    vid.hidden = false;
+    vid.src = src;
+    vid.play().catch(() => {});
+  } else {
+    vid.hidden = true;
+    img.hidden = false;
+    img.src = src;
+  }
   lb.querySelector('p').textContent = text || '';
   lb.hidden = false;
   document.body.style.overflow = 'hidden';
@@ -799,6 +836,10 @@ function closeLightbox(fromPop) {
   if (lb.hidden) return;
   lb.hidden = true;
   lb.querySelector('img').removeAttribute('src');
+  const vid = lb.querySelector('video');
+  vid.pause();
+  vid.removeAttribute('src');
+  vid.load();
   document.body.style.overflow = '';
   if (!fromPop && history.state && history.state.lb) { try { history.back(); } catch {} }
 }
@@ -1151,7 +1192,7 @@ $('#next').addEventListener('click', () => {
   else toast('Termina este capítulo para desbloquear la pista oculta ✨');
 });
 $('#back').addEventListener('click', openHome);
-$('#lightbox').addEventListener('click', () => closeLightbox());
+$('#lightbox').addEventListener('click', e => { if (!e.target.closest('video')) closeLightbox(); });
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
@@ -1440,15 +1481,39 @@ $('#cake-back').addEventListener('click', openHome);
 let waitT, shownClues = -1;
 const pad = n => String(n).padStart(2, '0');
 
-function showWait() {
-  $('#wait-kicker').textContent = `Para ${HISTORIA.para}`;
+function updateWhen() {
   const e = new Date(HISTORIA.entrega);
   $('#when').textContent = e.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
     + ' · ' + e.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+
+function showWait() {
+  $('#wait-kicker').textContent = `Para ${HISTORIA.para}`;
+  updateWhen();
   show('wait');
   tickCount();
   waitT = setInterval(tickCount, 1000);
+  setInterval(syncEntrega, 30000);
 }
+
+/* ---------- Hora de apertura en remoto ----------
+   estado.json → {"hora": "23:00"} (hora de España, del día de la entrega).
+   Se consulta cada 30 s y al volver a la pestaña, así la hora se puede cambiar
+   aunque Kito ya tenga la web abierta. */
+async function syncEntrega() {
+  try {
+    const r = await fetch(`estado.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return;
+    const j = await r.json();
+    const m = /^(\d{1,2}):(\d{2})$/.exec((j && j.hora || '').trim());
+    if (!m) return;
+    const iso = `${HISTORIA.entrega.slice(0, 10)}T${m[1].padStart(2, '0')}:${m[2]}:00+02:00`;
+    if (iso === HISTORIA.entrega) return;
+    HISTORIA.entrega = iso;
+    if ($('#wait').classList.contains('active')) { updateWhen(); tickCount(); }
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && $('#wait').classList.contains('active')) syncEntrega(); });
 
 function tickCount() {
   const ms = new Date(HISTORIA.entrega) - Date.now();
@@ -1524,7 +1589,7 @@ $('#crow').addEventListener('click', () => {
 /* ---------- Arranque ---------- */
 buildCover();
 const preview = new URLSearchParams(location.search).has('preview');
-if (!preview && Date.now() < new Date(HISTORIA.entrega)) showWait();
+if (!preview && Date.now() < new Date(HISTORIA.entrega)) { showWait(); syncEntrega(); }
 else if (store.get('kito-open', false)) openMusic();
 else show('lock');
 </script>
