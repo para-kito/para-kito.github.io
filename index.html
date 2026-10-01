@@ -49,8 +49,11 @@
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  button, a, .stage, .candle, .track, .polaroid, .lightbox, .crow { touch-action: manipulation; }
   svg { display: block; }
 
   #sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -326,6 +329,13 @@
   .carta blockquote { font-style: italic; text-align: center; color: #9b4a4a; margin: 20px 0 6px; font-size: 18px; }
   .firma { font: 600 32px/1 Caveat, cursive; text-align: right; margin-top: 14px; }
 
+  .galeria { display: none; width: 100%; margin-top: 24px; }
+  .galeria.show { display: block; animation: rise 1s ease both; }
+  .galeria h3 { font: 800 22px/1.2 Fraunces, serif; text-align: center; margin-bottom: 4px; }
+  .galeria .sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 12px; }
+  .g-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .g-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; padding: 0; background: var(--surface); cursor: zoom-in; }
+  .g-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .final {
     display: none; width: 100%; margin-top: 18px; text-align: center; padding: 22px 20px;
     border: 1px dashed rgba(246, 201, 107, .55); border-radius: 18px; background: rgba(246, 201, 107, .06);
@@ -388,7 +398,7 @@
     <p class="kicker">Antes de empezar</p>
     <h2 class="lock-title">Primero, la banda sonora 🎧</h2>
     <p class="lock-sub" id="music-sub"></p>
-    <a class="btn" id="music-go" target="_blank" rel="noopener">🎧 Poner la música</a>
+    <a class="btn" id="music-go">🎧 Poner la música</a>
     <button class="btn btn-ghost" id="music-skip">Seguir sin música</button>
   </section>
 
@@ -476,6 +486,7 @@
     </div>
     <p class="hint">o tócalas una a una</p>
     <article class="carta" id="carta"></article>
+    <section class="galeria" id="galeria"></section>
     <div class="final" id="final"></div>
     <div class="embed" id="cake-embed" style="width:100%"></div>
   </section>
@@ -501,19 +512,19 @@ const HISTORIA = {
   para: 'Kito',
   nombre: 'Alejandro',
   de: 'David',
-  inicio: '2026-07-01T00:00:00',   // el día que me escribió
+  inicio: '2026-07-01T00:00:00+02:00',   // el día que me escribió
   codigo: '0107',
   velas: 3,   // una por cada mes juntos
   cancionesEnKito: 22,
 
   // Hasta esta hora se ve la cuenta atrás. Para probar el regalo antes: añade ?preview a la URL
-  entrega: '2026-10-02T22:00:00',
+  entrega: '2026-10-02T22:00:00+02:00',
   pistas: [
-    { desde: '2026-09-28T00:00:00', texto: '¡CAW! Tienes un regalo en camino. Tiene banda sonora… y tú ya te sabes casi todas las canciones. 🎵' },
-    { desde: '2026-09-29T07:30:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
-    { desde: '2026-09-30T07:30:00', texto: '¡CAW! Salen un mojito, un mirador y un faro. Rojo, para más señas.' },
-    { desde: '2026-10-01T07:30:00', texto: '¡CAW! Hoy hacéis 3 meses 💛 Para abrir tu regalo vas a necesitar una fecha. Piensa cuál.' },
-    { desde: '2026-10-02T07:30:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto (y sin modo silencio 🔔) y pulmones preparados. 🌬️' },
+    { desde: '2026-09-28T00:00:00+02:00', texto: '¡CAW! Tienes un regalo en camino. Tiene banda sonora… y tú ya te sabes casi todas las canciones. 🎵' },
+    { desde: '2026-09-29T07:30:00+02:00', texto: '¡CAW! Todo empieza en un cumpleaños. Y no, no es el tuyo.' },
+    { desde: '2026-09-30T07:30:00+02:00', texto: '¡CAW! Salen un mojito, un mirador y un faro. Rojo, para más señas.' },
+    { desde: '2026-10-01T07:30:00+02:00', texto: '¡CAW! Hoy hacéis 3 meses 💛 Para abrir tu regalo vas a necesitar una fecha. Piensa cuál.' },
+    { desde: '2026-10-02T07:30:00+02:00', texto: '¡CAW! ¡ES HOY! Esta noche: volumen alto (y sin modo silencio 🔔) y pulmones preparados. 🌬️' },
   ],
 
   capitulos: [
@@ -664,6 +675,16 @@ const HISTORIA = {
     frase: 'Cuando menos lo esperas, es cuando aparece. Y apareciste tú.',
   },
 
+  // Galería después de la carta. Se enseñan solo las fotos que existan.
+  galeria: {
+    titulo: 'Nuestros 3 meses en fotos',
+    fotos: [
+      { foto: 'fotos/02.jpg', completa: 'fotos/full/02.jpg', pie: '1 de julio, 19:08' },
+      { foto: 'fotos/03.jpg', completa: 'fotos/full/03.jpg', pie: 'El primer mojito' },
+      { foto: 'fotos/06.jpg', completa: 'fotos/full/06.jpg', pie: 'Tú y yo, reflejados' },
+    ],
+  },
+
   // Tarjeta final, después de la carta
   final: {
     titulo: 'Y ahora, lo de verdad',
@@ -732,6 +753,36 @@ function polaroid(src, pie, full) {
   fig.addEventListener('click', open);
   fig.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
   return fig;
+}
+
+/* ---------- Galería ---------- */
+function buildGallery() {
+  const g = HISTORIA.galeria;
+  const box = $('#galeria');
+  box.innerHTML = '';
+  if (!g || !g.fotos || !g.fotos.length) return null;
+  const h = document.createElement('h3');
+  h.textContent = g.titulo;
+  const sub = document.createElement('p');
+  sub.className = 'sub';
+  sub.textContent = 'Toca una para verla entera';
+  const grid = document.createElement('div');
+  grid.className = 'g-grid';
+  g.fotos.forEach(f => {
+    const b = document.createElement('button');
+    b.className = 'g-item';
+    b.setAttribute('aria-label', f.pie || 'Foto');
+    const img = new Image();
+    img.alt = f.pie || '';
+    img.loading = 'lazy';
+    img.onerror = () => b.remove();
+    img.src = f.foto;
+    b.append(img);
+    b.addEventListener('click', () => openLightbox(f.completa || f.foto, f.pie));
+    grid.append(b);
+  });
+  box.append(h, sub, grid);
+  return box;
 }
 
 /* ---------- Visor de foto entera ---------- */
@@ -1128,7 +1179,7 @@ setInterval(tickLive, 1000);
 let AC;
 function audio() {
   AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-  if (AC.state === 'suspended') AC.resume();
+  if (AC.state !== 'running') AC.resume();
   return AC;
 }
 
@@ -1189,6 +1240,8 @@ function openCake() {
   $('#cake-actions').style.display = '';
   $('#carta').className = 'carta';
   $('#final').className = 'final';
+  $('#galeria').className = 'galeria';
+  $('#galeria').innerHTML = '';
   $('#final').innerHTML = '';
   $('#cake-embed').innerHTML = '';
   const mb = $('#mic');
@@ -1223,6 +1276,7 @@ function blowOut(c) {
 
 async function startMic() {
   if (mic.stream) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch {}
   audio();   // en el mismo toque y antes del permiso: en iPhone el audio solo arranca así
   const status = $('#cake-status');
   const btn = $('#mic');
@@ -1288,6 +1342,7 @@ function stopMic() {
 function celebrate() {
   $('#cake-status').textContent = '¡Deseo concedido! ✨';
   $('#cake-actions').style.display = 'none';
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
   playViolin(CUMPLE);
   if (window.confetti) {
     const colors = ['#f6c96b', '#ff8fab', '#ffffff', '#8fb8ff'];
@@ -1319,8 +1374,6 @@ function celebrate() {
     const o = HISTORIA.oculta;
     const a = document.createElement('a');
     a.className = 'btn';
-    a.target = '_blank';
-    a.rel = 'noopener';
     a.href = o.enlace || `https://open.spotify.com/search/${encodeURIComponent(o.titulo + ' ' + o.artista)}`;
     a.textContent = `🎧 Escuchar «${o.titulo}»`;
     finEl.append(a);
@@ -1330,7 +1383,9 @@ function celebrate() {
     embed($('#cake-embed'), HISTORIA.oculta);
     carta.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 1400);
-  if (fin) setTimeout(() => finEl.classList.add('show'), 4500);
+  const gal = buildGallery();
+  if (gal) setTimeout(() => { if (gal.querySelector('.g-item')) gal.classList.add('show'); }, 3200);
+  if (fin) setTimeout(() => finEl.classList.add('show'), gal ? 5200 : 4500);
 }
 
 $('#mic').addEventListener('click', startMic);
